@@ -1,0 +1,72 @@
+// INPUT: The global query q 
+// OUTPUT: The Group By clauses names set
+function aggregate(q)
+do
+    return 
+    (?l1 rdf:type :Level, ?l1 :hasFeature ?fl1) && !(?fl1 rdf:type :Measure) &&
+    (?f rdf:type :Measure) &&
+    !(?l1 :partOf* ?l2, ?l2 :hasFeature ?fl2>) && 
+    !(!(?c rdf:type :Level) && (?c :hasFeature ?f1,?f1 rdf:type Measure))
+end
+
+function connecting_concepts(q,g)
+do
+    q <?f rdf:type :Feature>
+    concepts = g <?c ?any ?f>
+    q add concepts
+end
+
+function compleating_dimensions(q,g)
+do
+    q <?l1 rdf:type :Level>
+    hierarchy = g <?l2 :partOf* ?l1, ?l2 :hasFeature ?f>
+    q add hierarchy
+end
+
+// INPUT: The global query q 
+// OUTPUT: The Group By clauses names set
+function getGroupByClause(q)
+do
+    l = 
+    (?l rdf:type :Level, ?l :hasFeature ?f) &&
+    !(?f rdf:type :Measure)
+    return l
+end
+
+// INPUT: The global query q
+// OUTPUT: The aggregating clauses names set
+function aggregatingClauses(q) 
+do
+    measures,f = 
+    ?f rdf:type :Measure, ?func :aggregates ?f // Inform user to not used mesures
+    aggregations = asQueryAggregations(measures,f)// Translate in sql aggregation: avg(x) as x
+    return aggregations
+end
+
+// INPUT: The query, the function that generates the gb clauses and the function that generates the aggregation clauses
+// OUTPUT: The sql query to perform aggregation in string format
+function makeSqlQuery(q, gb: q => gb, agg: q => agg, tableName)
+do
+    gb = stringCommaSeparated(gb(q))
+    agg = stringCommaSeparated(agg(q))
+    query = 
+    "
+    SELECT _gb_,_ag_
+    FROM _tableName_
+    GROUP BY _gb_
+    "
+    query = replace(gb,ag,query)
+    return query
+end
+
+// INPUT: The global query q
+// OUTPUT: The aggregated result in table format
+function aggregation(q)
+do
+    sourceQueries = rewriting(q) // executes the rewriting algorithm
+    conjunctiveQueries = hI(sourceQueries)
+    table = exec(conjunctiveQueries) // execute the conjunctive queries
+    aggregationQuery = makeSqlQuery(q,gb,agg,table)
+    aggregatedOutput = executeSqlQuery(table,aggregationQuery,name(table))
+    return aggregatedOutput
+end

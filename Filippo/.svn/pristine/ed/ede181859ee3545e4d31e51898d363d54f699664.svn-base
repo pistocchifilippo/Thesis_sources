@@ -1,0 +1,55 @@
+// INPUT: The global query q 
+// OUTPUT: The Group By clauses names set
+function getGroupByClause(q)
+do
+    levelsRoot = q <_ :hasDimension ?dimensions, ?dimensions :hasLevel ?level>
+    lastLvelsNames = []
+    foreach (l in levelsRoot) 
+    do
+        while (q <l :partOf ?nextLevel>)
+        do
+            l = nextLevel // hop to next level
+        end
+        lastLvelsNames = lastLvelsNames + name(l)
+    end
+    return lastLvelsNames
+end
+
+// INPUT: The global query q
+// OUTPUT: The aggregating clauses set
+function aggregatingClauses(q) 
+do
+    measures,f = q <_ :hasMeasure ?measures, ?measures :hasAggregatingFunction ?f>
+    aggregations = asQueryAggregations(measures,f)// avg(x) as x
+    return aggregations
+end
+
+// INPUT: The group by clauses gb and the aggregating clauses with theri operator
+// OUTPUT: The sql query to perform aggregation in string format
+function makeSqlQuery(gb,agg,tableName)
+do
+    gb = stringCommaSeparated(getGroupByClause(q))
+    agg = stringCommaSeparated(aggregatingClauses(q))
+    query = 
+    "
+    SELECT _gb_,_ag_
+    FROM _tableName_
+    GROUP BY _gb_
+    "
+    query = replace(gb,ag,query)
+    return query
+end
+
+// INPUT: The global query q
+// OUTPUT: The aggregated result in table format
+function aggregation(q)
+do
+    gb = getGroupByClause(q)
+    agg = aggregatingClauses(q)
+    sourceQueries = rewriting(q)
+    conjunctiveQueries = h(sourceQueries)
+    table = exec(conjunctiveQueries)
+    aggregationQuery = makeSqlQuery(gb,agg)
+    aggregatedOutput = executeSqlQuery(table,aggregationQuery,name(table))
+    return aggregatedOutput
+end
