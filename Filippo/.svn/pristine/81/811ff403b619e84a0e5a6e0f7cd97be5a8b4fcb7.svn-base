@@ -1,0 +1,684 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[english]{babel}
+\usepackage{newlfont}
+\usepackage{ amssymb }
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{graphicx}
+\usepackage{ wasysym }
+\usepackage{ upgreek }
+\usepackage{verbatim}
+
+\usepackage[T1]{fontenc}
+\usepackage{beramono}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+
+\lstdefinestyle{myScalastyle}{
+  frame=tb,
+  language=scala,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  frame=single,
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% MATHEMATICAL SYMBOLS ENCODING
+\newcommand\systemModel{\mathcal{S}}
+\newcommand\systemName{GFDM}
+\newcommand\globalQuery{\varphi}
+\newcommand\rollUpQuery{\varphi_{sql}}
+\newcommand\expandedQuery{\varphi_{E}}
+\newcommand\targetGraph{\mathcal{G}}
+\newcommand\integrationGraph{\mathcal{I}}
+\newcommand\integrationMultidimensionalGraph{\mathcal{I}_{\multidimensionalGraph}}
+\newcommand\targetGraphVertex{V_{\targetGraph}}
+\newcommand\targetGraphEdge{E_{\targetGraph}}
+\newcommand\targetMultidimensionalGraphVertex{V_{\multidimensionalGraph}}
+\newcommand\targetMultidimensionalGraphEdge{E_{\multidimensionalGraph}}
+
+\newcommand\concept{C}
+\newcommand\feature{F}
+\newcommand\wrapper{W}
+\newcommand\lut{W_{lut}}
+\newcommand\attribute{A}
+
+\newcommand\algebraQuery{h_{\mathcal{I}(\psi)}}
+\newcommand\view{\mathcal{V}}
+
+\newcommand\multidimensionalCube{\mathcal{MC}}
+\newcommand\fact{\mathcal{F}}
+
+\newcommand\dimension{\mathcal{D}}
+\newcommand\level{\mathcal{L}}
+\newcommand\measure{\mathcal{M}}
+\newcommand\levelsFunLabel{levels}
+\newcommand\dimensions{dimensions}
+\newcommand\levelsFundefinition{\levelsFunLabel:\dimension\rightarrow \langle \level \rangle}
+\newcommand\dimensionsDefinition{\dimensions:\fact\rightarrow \langle \dimension \rangle}
+\newcommand\multidimensionalGraph{\mathcal{MG}}
+\newcommand\aggregatingFunction{\mathcal{AF}}
+\newcommand\aggregatingFunctionFunLabel{aggregates}
+\newcommand\aggregatingFunctionDefinition{\aggregatingFunctionFunLabel: \aggregatingFunction \rightarrow \langle \measure \rangle}
+\newcommand\partOfFunLabel{partOf}
+\newcommand\partOfFunDefinition{\partOfFunLabel:\level \rightarrow \level'}
+
+\newcommand\id{id}
+\newcommand\levels{levels}
+\newcommand\measures{measures}
+\newcommand\features{features}
+\newcommand\levelsWithIdFeature{levelsWithIdFeature}
+\newcommand\levelsIdFeature{levelsIdFeature}
+\newcommand\aggregatingFunctions{aggregatingFunctions}
+\newcommand\lowerGranularityLevel{lowerGranularityLevel(\dimension)}
+\newcommand\higherGranularityLevel{higherGranularityLevel(\dimension)}
+\newcommand\set[1]{\langle #1 \rangle}
+
+% MATHEMATICAL SYMBOLS ENCODING
+
+% ENUMERATION HIERARCHY
+\renewcommand{\labelenumii}{\arabic{enumi}.\arabic{enumii}}
+\renewcommand{\labelenumiii}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}}
+\renewcommand{\labelenumiv}{\arabic{enumi}.\arabic{enumii}.\arabic{enumiii}.\arabic{enumiv}}
+% ENUMERATION HIERARCHY
+
+
+\textwidth=450pt\oddsidemargin=0pt
+\begin{document}
+\begin{titlepage}
+\begin{center}
+{{\Large{\textsc{Alma Mater Studiorum $\cdot$ Universit\`a di
+Bologna}}}} \rule[0.1cm]{15.8cm}{0.1mm}
+\rule[0.5cm]{15.8cm}{0.6mm}
+{\small{\bf SCUOLA DI SCIENZE\\
+Corso di Laurea in Ingegneria e Scienze Informatiche }}
+\end{center}
+\vspace{15mm}
+\begin{center}
+{\LARGE{\bf Implicit Roll-Up over graph-based data integration system}}\\
+\vspace{3mm}
+%{\LARGE{\bf DELLA}}\\
+%\vspace{3mm}
+%{\LARGE{\bf TESI}}\\
+\end{center}
+\vspace{40mm}
+\par
+\noindent
+\begin{minipage}[t]{0.47\textwidth}
+{\large{\bf Relatore:\\
+Matteo Golfarelli\\
+\\
+Responsabili del progetto:
+Oscar Romero, \\
+Sergi Nadal 
+}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.47\textwidth}\raggedleft
+{\large{\bf Presentata da:\\
+Filippo Pistocchi}}
+\end{minipage}
+\vspace{20mm}
+\begin{center}
+{\large{\bf Sessione\\%inserire il numero della sessione in cui ci si laurea
+Anno Accademico }}%inserire l'anno accademico a cui si è iscritti
+\end{center}
+\end{titlepage}
+
+\tableofcontents
+\listoffigures
+
+\chapter{Motivation} \label{Motivation}
+The idea of this project came from the very well known necessity of facilitating as much as possible data scientist job of data wrangling, since to develop robust mathematical models, machine learning models and in particular deep models it is very important to have huge amount of (correct) data.
+%
+Nowadays, IoT and social networks produce a massive amount of data and stakeholders in companies will have to deal with heterogeneous dataset generated form different sources distributed all around the world, and this task may be very time spending.
+%
+Data integration systems have been developed to overcome these problems, with the purpose of re-conciliating a huge amount of heterogeneous data sources making easier the process of knowledge discovering, making it possible to check the data as a single integrated view.
+%
+As we know from the literature there exists two main kind of data integration system;
+%
+Physical data integration is more typical for data data warehouse systems, and it is mainly aimed to structure and analyse data as a multidimensional model.
+%
+The purpose of this technique is strictly analytical and the kind of operation performed are aggregations over numerical data.
+%
+Virtual data integration as opposite is not focused on aggregation while its purpose is gathering huge amount of data and make easier the data wrangling operations to data enthusiast.
+
+What we would like to do in this project is extend a virtual data integration system (graph-based) giving the possibility to support a multidimensional schema (with the shape of a graph) as data warehouses does.
+%
+This solution may have both the advantages of virtual and physical data integration over a single system.
+
+\section{Data integration techniques}
+The aim of this section is to open a small parenthesis to describe the main data integration techniques, as we saw before virtual and physical data integration, detailing a bit more precisely their main characteristic in order to make it easier to understand the motivations behind this work.
+
+\begin{itemize}
+    \item Physical data integration
+    \begin{itemize}
+        \item Multidimensional model
+        \begin{itemize}
+            \item $\dimension, \level, \measure$ introduce syntax here?
+        \end{itemize}
+        \item Roll-Up%\footnote{https://en.wikipedia.org/wiki/Operation_Roll-Up}
+    \end{itemize}
+    \item Virtual data integration
+    \item Graph-based virtual data integration
+    \begin{itemize}
+        \item Ontology based data access
+        \item Ontology mediated query
+        \begin{itemize}
+            \item LAV mappings.
+            \item $\wrapper$
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\section{Implicit Roll-Up philosophy}
+From now on we will work on a graph virtual data integration, ontology mediated query based model, also KG (knowledge graph) based, that we will call $\systemModel$, in particular we will focus on a system called \systemName, more detail regarding this can be found in section \ref{Technology preliminaries}, and also in TKDE pubblication \cite{TKDE}.
+%
+Let's define now as $\targetGraph$ the graph target schema and as $\globalQuery$ a pattern matching or visual query over $\targetGraph$.
+%
+What we would like to do in this project is to develop a multidimensional schema but with the shape of a graph and we will call this structure multidimensional graph and it will be identified as $\multidimensionalGraph$.
+%
+This kind of structure will therefore have dimensions and measures as multidimensional cubes $\multidimensionalCube$.
+
+The goal of the project then will be to try to implement one of the most studied operation that can be applied over $\multidimensionalCube$, the Roll-Up, and try to apply it over $\multidimensionalGraph$.
+%
+This may be very useful for different reasons;
+%
+Considering that $\systemModel$ deals with lots of heterogeneous dataset, as declared in the introduction, it will be very likely to have data sources producing data, behaving to the same domain, but recorded in different granularity.
+%
+Therefore, the extension we would like to do in $\systemModel$ is, for each $\globalQuery$ over $\targetGraph$, or more specifically $\multidimensionalGraph$, trying to implicitly extrapolate a Roll-Up semantic and if possible, deliver a result for $\globalQuery$ at the queried data granularity, considering data behaving form the lowest data granularity to the queried data granularity available into $\multidimensionalGraph$.
+
+The implicit Roll-Up operation then may be very useful for data scientists working over $\systemModel$ since it would come across to a subset of problems that data scientists face off daily and with the help of the example in Figure \ref{fig:Example}, all the advantages of our method will be illustrated.
+%
+As we ca see Figure \ref{fig:Example} is showing a multidimensional graph $\multidimensionalGraph$ and a query $\globalQuery$ over $\multidimensionalGraph$ as a visual dashed red line.
+%
+The graph is describing a fact related to \textit{Sales}, two study measures as the \textit{total revenue} and the \textit{number of unit}.
+%
+In addition three dimensions are described, each one having three granularity levels.
+%
+Let's focus now just on the spatial dimension, having \textit{City}, \textit{Region} and \textit{Country} as vertexes and given the semantic of $\globalQuery$, it seems that the user who triggered $\globalQuery$ is asking for a \textit{Country} granularity level.
+%
+What we want our system to do is not just giving as result just the data at \textit{Country} granularity level but a total Roll-Up for the entire spatial dimension, trying to deliver also data at \textit{Region} and \textit{Country} granularity to \textit{Country} granularity (this operation will have to be done also for all the other queried dimensions).
+%
+\begin{figure} [ht]
+    \fbox{\includegraphics[width=\linewidth]{img/example.png}}
+    \caption{Idea of a simplified multidimensional graph $\multidimensionalGraph$ having three different granularity level for three dimension and two numerical data. Also a query $\globalQuery$ have been depicted as a dashed red line.}
+    \label{fig:Example}
+\end{figure}
+
+The advantages of an implicit Roll-Up operation in this case would be twofold;
+%
+Firstly this operation would save really lot of time if the data scientist is interested in this kind of operation providing a huge automation and delivering correct data.
+%
+Secondly, this kind of operation would allow to have study measures more accurate and correct since their aggregation will be based on more data since all the lower granularity level will be considered in the computation, and very likely, the lower granularity level have higher cardinality and this will lead to a much more rich output.
+%
+Doing this operation we assume that data are disjointed.
+%
+
+\chapter{Objectives}
+This section is a natural follow-up of chapter \ref{Motivation} where all the requirements of the to-be vision will be formalised.
+%
+All the following functionalities will be built over \systemName\, as a natural extension of the system.
+%
+It will follow also a clear distinction of all the different kind of functionality, that will be described as hierarchies.
+
+\section{Functional Requirements} \label{Functional Requirements}
+This section will describe functional requirements as hierarchies.
+%
+These lists represent exactly what the system is and what the system does.
+%
+\begin{enumerate}
+    \item Perform implicit Roll-Up on the result of a query $\globalQuery$ over a multidimensional graph $\multidimensionalGraph$, automatically delivering the right data granularity.
+    \begin{enumerate}
+        \item Understanding if it is possible to execute the implicit Roll-Up operation given $\globalQuery$
+        \begin{enumerate}
+            \item If it is not possible to execute the implicit Roll-Up the output of $\globalQuery$\, would be just the result that \systemName would give.
+            \item If it is possible to execute the implicit Roll-Up output of $\globalQuery$ would be the Roll-Up of the output of \systemName.
+        \end{enumerate}
+        \item Extraction of group by clauses from $\globalQuery$.
+        \begin{enumerate}
+            \item Parsing of the group by clauses.
+        \end{enumerate}
+        \item Extraction of aggregating clauses from $\globalQuery$.
+        \begin{enumerate}
+            \item Parsing of the aggregating clauses.
+        \end{enumerate}
+        \item Expansion of the dimensions.
+        \item Generation of a SQL view from \systemName\, output over the expanded query $\globalQuery$.
+        \item Wrapping up the view with the aggregation semantic.
+        \item Possibility to flag if performing implicit Roll-Up or not.
+    \end{enumerate}
+    \item Definition of a programmatic model able to define $\multidimensionalGraph$ in a domain scenario.
+    \begin{enumerate}
+        \item Definition of the scenario name.
+        \item Definition of the target schema $\multidimensionalGraph$.
+        \item Definition of the query $\globalQuery$.
+        \item Definition of the wrappers and attributes.
+    \end{enumerate}
+    \item Automation pipeline able to generate automatically all the configuration files for \systemName\, parsing the programmatic model and generation of a directory with the name of the scenario containing all the configuration files.
+    \begin{enumerate}
+        \item Multi-platform compatibility (usage of relative paths with ad-hoc system separators).
+        \item Generation of the target schema triples (global\_graph.txt).
+        \item Generation of the LAV mappings for each wrapper (mappings.txt).
+        \begin{enumerate}
+            \item For each wrapper will be written the line number of the triples in global\_graph.txt that behaves to the respective LAV mapping.
+        \end{enumerate}
+        \item Generation of the SPARQL query (query.txt).
+        \item Generation of the sources graph containing wrappers and attributes triples (source\_graph.txt).
+        \item Generation of a file pointing to each wrapper name to the CSV file path containing the data (wrappers\_files.txt).
+        \item Generation of a template CSV file wrapper (\textit{*wrapperName*}.csv).
+        \item Automatic generation of other configuration files independent to the scenario (metamodel.txt,prefixes.txt).
+    \end{enumerate}
+\end{enumerate}
+\section{Non Functional Requirements}
+Here will follow all the requirements that are not functionalities.
+%
+\begin{enumerate}
+    \item Keeping the KG syntax of \systemName\, to model a multidimensional graph $\multidimensionalGraph$ without changing it.
+    \item Avoid to hard-code the query syntax in the design process, keeping the system more flexible as possible.
+    \item The extension should be most transparent as possible to the user.
+    \item Robustness of the automation pipeline.
+\end{enumerate}
+\section{Implementation requirement}
+Finally here will be listed the requirements related to the implementation work.
+%
+\begin{enumerate}
+    \item Reuse modules of \systemName\, modules to develop implicit Roll-Up.
+    \item Wrap \systemName\, modules up adding implicit Roll-Up algorithm.
+    \item Use a programming language able to describe DSLs.
+    \item Use a functional programming language in order to speed up the implementation process.
+\end{enumerate}
+
+
+\chapter{Related work} \label{Related work}
+Related work to the objectives defined and gaps justifying the need to develop your thesis.
+
+\chapter{Technology preliminaries}\label{Technology preliminaries}
+The aim of this section is to describe the system that our project will extend.
+%
+The system name is \systemName, and its feature are described in \cite{TKDE}, just the rewriting algorithm that works with configuration files and generate a relational algebra expression plus some parser that can convert the relational algebra expression into a sql query.
+
+\section{\systemName\,system}
+\subsection{\systemName\, model}
+$\integrationGraph$ is a knowledge graph (KG) composed of the following vertex and edges:
+\begin{itemize}
+    \item $\targetGraphVertex$
+    \begin{itemize}
+        \item $\concept$
+        \item $\feature$, and some features may be identifiers as well.
+        \item $\wrapper$
+        \item $\attribute$
+    \end{itemize}
+    \item $\targetGraphEdge$
+    \begin{itemize}
+        \item $\langle \concept, hasFeature, \feature \rangle$
+        \item $\langle \concept, relationshipName, \concept \rangle$
+        \item $\langle \wrapper, hasAttribute, \attribute \rangle$
+        \item $\langle \attribute, sameAs, \feature \rangle$
+    \end{itemize}
+\end{itemize}
+%
+\subsection{Query answering} \label{Query answering}
+How the rewriting algorithm works and what output generates.
+\begin{comment}
+\begin{itemize}
+    \item Ids
+    \item LAV mapping
+    \item Relational algebra generation
+    \item SQL conversion
+\end{itemize}
+\end{comment}
+
+\subsection{Implicit Roll-Up model}
+How do we want to design a multidimensional graph over \systemName\, model and syntax...
+%
+\begin{figure} [ht]
+    \fbox{\includegraphics[width=\linewidth]{img/model.png}}
+    \caption{The model.}
+    \label{fig:Model}
+\end{figure}
+%
+\subsection{Joining dimensional data over \systemName\,system} \label{Joining dimensional data}
+In this section we would like to introduce the how the join of dimensional data will be executed.
+%
+As we know this operation is very important for the Roll-Up since it will allow to rise up data at a lower granularity to the desired higher granularity and since this feature is actually proper of \systemName\, this is why it will be explained into this chapter and not in the following one.
+%
+To execute the join of dimensional data it will be exploited the Rewriting Algorithm described in section \ref{Query answering}, since it will allow to execute join operations through different wrapper attributes.
+
+The idea we got to solve this problem is using look-up tables to perform the join of dimensional data;
+%
+Look-up tables, that will be represented as wrappers, will lead the join operation between dimensions since, for each functional dependency, they will store how a level maps to the following higher granularity level.
+%
+This kind of approach, to work, will need a preliminary phase in which all the look-up table wrappers $\lut$ have to be loaded into the system, or linked to any multidimensional data repository, otherwise it will not be possible to execute the join and as consequence the Roll-Up.
+
+Let's now start describing a how a dimension will be represented in \systemName\, with the help of Figure \ref{fig:Dimension}.
+%
+As in the multidimensional model $\multidimensionalCube$, where each dimension is divided in levels each one associated to an identifier, the same idea is replicated into the multidimensional graph $\multidimensionalGraph$, where we can see that three levels are defined in Figure \ref{fig:Dimension}, as \textit{City}, \textit{Region} and \textit{Country}, each one linked to at least an identifier feature via \textit{hasFeature} relationship, respectively \textit{city}, \textit{region} and \textit{country}.
+%
+\begin{figure} [ht]
+    \fbox{\includegraphics[width=\linewidth]{img/dimension.png}}
+    \caption{How a dimensions will be represented over \systemName.}
+    \label{fig:Dimension}
+\end{figure}
+
+Once explained how a dimension can be represented in $\multidimensionalGraph$ let's now go a bit ahead detailing how multidimensional data are joined by means of the rewriting algorithm.
+%
+Figure \ref{fig:Join} depicts a clear example of a multidimensional integration graph $\integrationMultidimensionalGraph$, having on the right hand side a dimension and also the entire multidimensional graph $\multidimensionalGraph$ (this part have already been defined before), and on the left hand side are represented the wrappers and their attributes.
+%
+Also a visual query $\globalQuery$ is represented as a red dashed line.
+%
+We can see that three wrappers have been depicted in the figure, where \textit{w1} and \textit{w2} are regular data wrapper having a single attribute, respectively \textit{city} and \textit{country}, while the third wrapper \textit{w3} is a look-up table wrapper $\lut$ that will allow to join dimensional data.
+%
+In particular $\lut$ stores all the possible combination describing how each city can be converted in a country.
+%
+Given a comprehensive query $\globalQuery$ that involves, for a dimension, all the levels and the respective identifier feature, it will be possible to join all the levels queried if there is a $\lut$ bridging all the levels functional dependencies.
+%
+Finally the result we would like to expect from the execution of $\globalQuery$ with the rewriting algorithm would be the join between LAV mapping of \textit{w2},\textit{w3} (the look-up table) and \textit{w1}, having as result the following relational algebra expression.
+\begin{equation} 
+\Uppi city,country((w1\, \Bowtie_{city=city}\, w3)\, \Bowtie_{country=country}\, w1)
+\end{equation}
+%
+\begin{figure} [ht]
+    \fbox{\includegraphics[width=\linewidth]{img/join.png}}
+    \caption{How a dimensional data are joined over \systemName, where the dashed red line is a visual query $\globalQuery$.}
+    \label{fig:Join}
+\end{figure}
+%
+
+\chapter{Description of the method}\label{Description of the method}
+
+In this chapter it will be firstly described the model developed, aimed to support the operation of implicit Roll-Up and after it will follow a detailed explanation of the algorithm that will implement the implicit Roll-Up operation itself.
+%
+The model will extend the system \systemName\, defined in chapter \ref{Technology preliminaries}, and in particular, section \ref{Joining dimensional data} will be very important since it is the starting point of the reasoning behind the implicit Roll-Up algorithm, since it is related to the join of dimensional data.
+%
+
+\section{Preparation}
+Let's consider a multidimensional cube $\multidimensionalCube$ described as 
+\begin{equation}
+    \fact = \langle \dimension,\level,\measure,\levelsFundefinition\rangle    
+\end{equation}
+where $\fact$ is the described fact, $\dimension$ are all the dimensions, $\level$ are the different granularity levels and $ \measure $ are all the measures.
+%
+Finally we have $\levelsFunLabel$ that's a function that for a given $\dimension$ gets all the levels $\level$ behaving to $\dimension$.
+
+Let's now formalise the multidimensional graph model $\multidimensionalGraph$ defined as 
+\begin{equation}
+    \langle \dimension,\level,\measure,\aggregatingFunction,\levelsFundefinition,\aggregatingFunctionDefinition,\partOfFunDefinition \rangle
+\end{equation}
+that reuses some of the element of $ \multidimensionalCube $.
+%
+This new kind of model considers in addiction the aggregating functions $\aggregatingFunction$, each one associated to a set of measures $ \measure $ by the function $ \aggregatingFunctionFunLabel $.
+%
+Aggregation functions in $ \multidimensionalCube $ model are just related to the kind of measures subject to the Roll-Up operation, therefore the aggregating function is established run time, while in $ \multidimensionalGraph $ model it needs to be "hard-coded" into the schema in order to perform implicit aggregations, since being the operation executed implicitly, it will not be possible to choose it while executing the query.
+%
+$\multidimensionalGraph$ describes also in a more explicit way also all the functional dependencies between each level by means of the function $\partOfFunLabel$.
+
+Let's now also introduce some simple functions that are $traverses$ over $\multidimensionalGraph$ that will be very useful in the next section for the execution of the algorithm; 
+%
+$\measures(\multidimensionalGraph)$, $\features(\multidimensionalGraph)$, $\levels(\multidimensionalGraph)$, $\dimensions(\multidimensionalGraph)$ are respectively all the measures $\measure$, features $\feature$, levels $\level$ and dimensions $\dimension$ in a given $\multidimensionalGraph$, and $\id(\concept)$ that are all the ids features for a given $\concept$.
+%
+The functions $ \lowerGranularityLevel $ and $ \higherGranularityLevel $ as respectively the lower granularity level and the higher granularity level of a given dimension $\dimension$.
+%
+The functions $\levelsWithIdFeature(\multidimensionalGraph)$, $\levelsIdFeature(\multidimensionalGraph)$, are a tiny bit more complex and are respectively describing all the levels that have at least an id feature and all the id features behaving to a level.
+%
+Finally the function $\aggregatingFunctions(\multidimensionalGraph)$ will describe all the aggregating functions $\aggregatingFunction$ in $\multidimensionalGraph$.
+
+Let's consider also the querying for $\multidimensionalGraph$, where $\globalQuery$ is a pattern matching or visual query over $\multidimensionalGraph$ and $\expandedQuery$ as an expanded query, where given $\globalQuery$, $\forall id(\levels(\globalQuery)) \neq \emptyset$ and $\rollUpQuery$ as a query in SQL format.
+
+The connections between $ \targetGraph $ and $ \multidimensionalGraph $ are done generating taxonomies between $\targetGraphVertex$ and $\targetGraphEdge$, and $\targetMultidimensionalGraphVertex$ and $\targetMultidimensionalGraphEdge$, and the relationships are the following; 
+\begin{equation}
+    (\level, \aggregatingFunction) \sqsubseteq \concept
+\end{equation}
+\begin{equation}
+    \measure \sqsubseteq \feature
+\end{equation}
+\begin{equation}
+    \globalQuery \sqsubseteq \expandedQuery \sqsubseteq \targetGraph \sqsubseteq \multidimensionalGraph
+\end{equation}
+\begin{equation}
+    (\partOfFunLabel,\aggregatingFunctionFunLabel) \sqsubseteq \targetMultidimensionalGraphEdge
+\end{equation}
+\begin{equation}
+    \dimension \equiv \cup_{if(i == 0) \level = \lowerGranularityLevel \\ else \level = \partOfFunLabel(\level)}^{\higherGranularityLevel} \langle \level, \partOfFunLabel, \partOfFunLabel(\level) \rangle \cup \langle \level, hasFeature, id(\level) \rangle
+\end{equation}
+
+\section{The Implicit Roll-Up algorithm} \label{Implicit RollUp}
+In this section will follow up a detailed explanation of the algorithm developed to perform implicit Roll-Up.
+%
+The $traverses$ defined before will be massively used to simplify the understandability of the algorithms but their implementation will not be detailed since it is very related to the implementation technique.
+%
+The main flow have been depicted in the Algorithm \ref{alg:implicitRollUp}, where it is clear which are the main steps of the algorithm and how they are related to each other.
+%
+The algorithm will take as input the multidimensional graph $\multidimensionalGraph$, the global query $\globalQuery$ and the function $makeView$ that will basically execute underneath the rewriting algorithm and finally it will generate a SQL view of the result of the rewriting algorithm. 
+%
+As output the $implicitRollUp$ will generate a SQL query $\rollUpQuery$ wrapping the view with the aggregation statements if it will be possible to perform implicit Roll-Up, otherwise the SQL query result of just the rewriting algorithm.
+%
+%RewriteCQ
+\begin{algorithm}
+\caption{implicitRollUp}\label{alg:implicitRollUp}
+\textbf{Input:} $\multidimensionalGraph,\globalQuery,makeView:\globalQuery \rightarrow \rollUpQuery$\\
+\textbf{Output:} $\rollUpQuery$
+\begin{algorithmic}[1]
+\If{$canAggragate(\globalQuery)$}
+    \State $\set{\level} \gets extractGroupByClauses(\globalQuery)$
+    \State $\langle \aggregatingFunction,\langle \measure \rangle \rangle \gets extractAggregationClauses(\multidimensionalGraph,\globalQuery)$
+    \State $\set{\level}_{parsed} \gets parseGroupByClauses(\langle \level \rangle)$
+    \State $\langle \aggregatingFunction,\langle \measure \rangle \rangle_{parsed} \gets
+    parseAggregationClauses(\langle \aggregatingFunction,\langle \measure \rangle \rangle)$
+    \State $ \expandedQuery \gets expandAggregationLevels(\globalQuery) $
+    \State $\rollUpQuery \gets $
+    \State $"SELECT\, \set{\level}_{parsed}, \langle \aggregatingFunction,\langle \measure \rangle \rangle_{parsed}$
+    \State $FROM\, (makeView(\expandedQuery))$
+    \State $GROUP\, BY\, \set{\level}_{parsed}"$
+\Else
+    \State $\rollUpQuery \gets makeView(\globalQuery)$
+\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+Let's now detail all the steps of the algorithm starting defining the first procedure we encounter.
+%
+The procedure $canAggregate$, illustrated in the  algorithm \ref{alg:canAggregate}, will be used to detect all the scenarios in which it will be possible or not to execute the Implicit Roll-Up algorithm; If it will be possible to extrapolate a group by semantic from $\globalQuery$ then it will be possible to execute Implicit Roll-Up as well, otherwise not.
+%
+The input of this procedure is the source query $\globalQuery$, while the output will be a $Boolean$ expression that will be $true$ if it is possible to aggregate $\globalQuery$ otherwise $false$.
+
+\begin{algorithm}
+\caption{canAggregate}\label{alg:canAggregate}
+\textbf{Input:} $\globalQuery$\\
+\textbf{Output:} $Boolean$
+\begin{algorithmic}[1]
+\State $ \levelsWithIdFeature(\globalQuery) \neq \emptyset \land \measures(\globalQuery) \neq \emptyset \land (\features(\globalQuery) - \levelsIdFeature(\globalQuery) - \measures(\globalQuery)) \equiv \emptyset$
+\end{algorithmic}
+\end{algorithm}
+
+After understanding if it is possible to have implicit Roll-Up or not, two important algorithm will be executed over the global query $\globalQuery$ in order to extract the group by semantic; algorithm \ref{alg:extractGroupByClauses} will be executed to get the group-by clauses of the final query and algorithm \ref{alg:extractAggregationClauses} will get the measures $\measure$ and the function $\aggregatingFunction$ that will be used to aggregate $\measure$ itself. 
+
+Algorithm \ref{alg:extractGroupByClauses}, $extractGroupByClauses$, will be used to understand which are the group-by clauses over $\globalQuery$ given as input.
+%
+As output will be given a set of levels $\set{\level}$ and each level name will be a group-by clause. 
+%
+This algorithm is strictly associated to the procedure $parseGroupByClauses$ that will allow to put in a correct string format (comma separated) all the group-by clauses in a way that can perfectly fit both into the "SELECT" and "GROUP BY" statements of a SQL query.
+%
+\begin{algorithm}
+\caption{extractGroupByClauses}\label{alg:extractGroupByClauses}
+\textbf{Input:} $\globalQuery$\\
+\textbf{Output:} $\set{\level}$
+\begin{algorithmic}[1]
+\State $ \set{\level} \gets \levelsWithIdFeature(\globalQuery)$
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm \ref{alg:extractAggregationClauses}, $extractAggregationClauses$ will be used as opposite to extract the semantic of aggregation for the queried measures $\measure$.
+%
+As input it will be given the global query $\globalQuery$ and the multidimensional graph $\multidimensionalGraph$ and as output will be given a set of tuples, having an $\aggregatingFunction$ each one associated to a set of $\measure$ behaving to $\globalQuery$ that the respective aggregating function will aggregate.
+%
+As for the algorithm \ref{alg:extractAggregationClauses} there is a parsing function as well, $parseAggregationClauses$ that will generate a formatted string (comma separated) for the aggregation part of the SQL query into the "SELECT" statement.
+%
+\begin{algorithm}
+\caption{extractAggregationClauses}\label{alg:extractAggregationClauses}
+\textbf{Input:} $\globalQuery,\multidimensionalGraph$\\
+\textbf{Output:} $\langle \aggregatingFunction,\langle \measure \rangle \rangle_{\globalQuery}$
+\begin{algorithmic}[1]
+\State $ \set{\aggregatingFunction}_{\multidimensionalGraph} \gets \aggregatingFunctions(\multidimensionalGraph)$
+\State $ \langle \aggregatingFunction,\langle \measure \rangle \rangle _{\multidimensionalGraph} \gets \set{\aggregatingFunction}_{\multidimensionalGraph}.map(\aggregatingFunction_{\multidimensionalGraph}, \aggregatingFunctionFunLabel(\aggregatingFunction_{\multidimensionalGraph}))$
+\State $\langle \aggregatingFunction,\langle \measure \rangle \rangle_{\globalQuery} \gets \langle \aggregatingFunction,\langle \measure \rangle \cap \measures(\globalQuery) \rangle_{\multidimensionalGraph}.filter(measureNonEmpty)$
+\end{algorithmic}
+\end{algorithm}
+
+Another important step of $implicitRollUp$ algorithm will be performed by algorithm \ref{alg:expandAggregationLevels}, $expandAggregationLevels$.
+%
+In order to exploit the semantic of the rewriting algorithm to join the dimensional data, as described in section \ref{Joining dimensional data}, it is important to include in $\globalQuery$ all the triples $\langle \level, hasFeature, \id(\level) \rangle$ and $\langle \level, partOf, \level' \rangle$ of each queried dimension $\dimension$, having $\expandedQuery$.
+%
+Therefore, the input of the algorithm will be the query $\globalQuery$ and $\multidimensionalGraph$, and as output we will have the expanded query $\expandedQuery$.
+%
+\begin{algorithm}
+\caption{expandAggregationLevels}\label{alg:expandAggregationLevels}
+\textbf{Input:} $\globalQuery,\multidimensionalGraph$\\
+\textbf{Output:} $\expandedQuery$
+\begin{algorithmic}[1]
+\State $\set{\dimension} \gets \dimensions(\globalQuery)$
+\State $ \expandedQuery \gets \globalQuery \cup \set{\dimension} $
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+\chapter{Implementation}
+In this section will be explained how all the algorithm and functions illustrated in section \ref{Description of the method} have been actually implemented.
+%
+Since this work is about graph let's illustrate the main ways to deal with this kind of data structure.
+%
+The most typical way to query a graph structure is by using $traverse$ operations.
+%
+Nowadays there exists a lot of graph databases in-memory or not that allow to store graphs structure, offering $traverse$ operations, typically in the form of pattern-matching.
+
+In this work by the way, a new programmatic graph data model have been defined from scratch to overcome few limitations given from the original system.
+%
+Since \systemName\, needs configuration files to describe the entire integration graph $\integrationGraph$ and this procedure is very error prone to do it as "handwriting", the new graph data model have been developed right to automate this procedure.
+%
+A nice domain specific language, that will be detailed in section \ref{Domain Specific Language}, have also been develop in order to define each testing scenario very easily.
+%
+Once defined a domain specific language, a new model and $traverses$ over the model itself to generate $\integrationGraph$ configuration file, it was pretty straightforward to keep defining all the remaining $traverses$ to directly implement the implicit Roll-Up algorithm over this data model as well.
+%
+The entire implementation process have been done using as language Scala\footnote{https://www.scala-lang.org} because it is very good for mathematical models and domain specific language definition.
+%
+The decision of using Scala as programming language have been also very good since a functional programming style is less error prone rather than the typical imperative one.
+%
+For this reason the development of the system have been very quick staring from the first releases.
+
+\section{Modules}
+This section is aimed to describe the code organisation and to clearly show how the different modules of the application interfaces to each other.
+%
+Figure \ref{fig:Package} depicts a UML package diagram that describes so.
+%
+We wants for first make clear that the organisation described in figure \ref{fig:Package} will not exactly map 1-1 with the real source code, since its purpose is just to make clear the software structure and its behaviour.
+%
+Since in this work we are doing an extension of \systemName, in the diagram we can clearly distinguish the package \systemName\, that contains all the module behaving to the extended system and implicitRoll-Up that contains all the sources behaving to the extension.
+%
+The package \textit{model} contains the object oriented models and all the $traverses$ and the \textit{implicitRoll-UpAgorithm} package contains the algorithm illustrated in section \ref{Implicit RollUp}, implemented into the source file \textit{implicitRoll-Up}.
+%
+This module uses the interface \textit{QueryRewriting} to generate the SQL view and wrap it up with the aggregation syntax.
+%
+The $traverses$ into the module \textit{Graph} will be able to generates the configuration file into the package \textit{configurationScenarions/scenario}, that will be used by the module \textit{modelGeneration} to crate an instance of $\integrationGraph$, that will finally be used by \textit{QueryRewriting}.
+%
+The DSL module adorns the \textit{Graph} model structures.
+%
+Finally the package \textit{Scenarios} will contain the running examples that will be generally written using the DSL syntax.
+%
+\begin{figure} [ht]
+    \fbox{\includegraphics[width=\linewidth]{img/packages.png}}
+    \caption{UML package diagram.}
+    \label{fig:Package}
+\end{figure}
+%
+
+\section{Execution flow}
+The sequence diagram in figure \ref{fig:Sequence} is describing clearly how the communication between the different modules is performed.
+%
+The execution flow starts in a \textit{TestingScenario} where using the DSL or not the integration graph $\integrationGraph$ will be described.
+%
+The \textit{Utils} module contains the automation flaw that generates all the configuration files (described in section \ref{Functional Requirements}) that \systemName\, needs.
+%
+Right after the \textit{ImplicitRoll-Up} module will execute the implicit Roll-Up algorithm that is also described in section \ref{Implicit RollUp}.
+%
+The implicit Roll-Up algorithm will also need the \textit{RewritingAlgorithm} module to execute the query rewriting and producing a relational algebra expression that will be converted in a SQL expression by the module \textit{Sql}.
+%
+\begin{figure} [ht]
+    \fbox{\includegraphics[width=\linewidth]{img/sequence.png}}
+    \caption{UML sequence diagram.}
+    \label{fig:Sequence}
+\end{figure}
+%
+
+
+\section{Domain Specific Language} \label{Domain Specific Language}
+In this section will follow some code snippets describing the grammar of the DSL (domain specific language).
+%
+class that extends all, with method:
+scenario{
+    name
+}
+%
+DSL for scenario generation
+%
+DSL for graph generation
+%
+Definition of features:
+%
+\begin{lstlisting}[style=myScalastyle]
+
+
+\end{lstlisting}
+
+\chapter{Experimentation}
+
+\section{Automatic test}
+
+\section{Validation test}
+Description of the experimental datasets and experiments conducted. Report results and interpret them.
+
+The only factor that matters for performances is the size of the graph.
+
+\chapter{Conclusions and future works}
+% Summing up.
+Open repository for dimensional lookup table.
+
+
+\chapter{Problems, \textit{to drop}}
+
+\begin{itemize}
+    \item Aggregation functions are separate form $\multidimensionalGraph$ in my implementation, should be route concepts anyway.
+    %
+    Is it possible to have a graph with more than one root?
+    \item How to chose the right id to expand for a Level if there are multiple… I may need AggregationId but also not (I can cut form the rewriting actually)
+    \item partOf relationship, Dimensions and Facts are very relaxed in my work because are not necessary for the algorithm, but they may be very useful for understanding the model and for visualisation purpose and managing for future works.
+    \item disjointedness of data (assume disjointedness) and compatibility (assume compatibility)
+    \item Data set showcases (assume not to have all the hierarchy filled in one variable), otherwise we may need to enrich the model
+    \item The algorithm is faked a bit in section \ref{Implicit RollUp} to make it more understandable (eg hide that \systemName works with configuration files)
+    \item include wrapper name in the result is not implemented
+\end{itemize}
+
+\begin{thebibliography}{9}
+\bibitem{TKDE} 
+Nadal, S., Abello, A., Romero, O., Vansummeren, S., and Vassiliadis, P. (2021). Graph-driven Federated Data Management. IEEE Transactions On Knowledge And Data Engineering, 1-1. doi: 10.1109/tkde.2021.3077044
+
+
+\end{thebibliography}
+
+\end{document}
+
